@@ -2,13 +2,18 @@
  * @Author: He zhenliang
  * @Date: 2019-08-21 09:31:55
  * @LastEditors: Do not Edit
- * @LastEditTime: 2019-08-21 10:48:57
+ * @LastEditTime: 2019-08-21 11:48:55
  */
 
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 var HtmlWebpackPlugin   = require('html-webpack-plugin');
 var webpack             = require('webpack');
+
+
+
+// 环境变量配置，dev / online
+var WEBPACK_ENV         = process.env.WEBPACK_ENV || 'dev';
 
 // 获取html-webpack-plugin参数的方法 
 var getHtmlConfig = function(name){
@@ -23,13 +28,15 @@ var getHtmlConfig = function(name){
 
 
 var config = {
+  mode : 'dev' === WEBPACK_ENV ? 'development' : 'production',
   entry: {
-    'index'             : './src/page/index.js',
-    'login'             : './src/page/user-login/index.js',
+    'index'             : './src/page/index/index.js',
+    'user-login'             : './src/page/user-login/index.js',
     'common'            : './src/page/common/index.js',
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
+    publicPath  :  '../', //'dev' === WEBPACK_ENV ? '/dist/' : '//s.happymmall.com/mmall-fe/dist/',
     filename    : 'js/[name].js'
   },
   externals : {
@@ -46,8 +53,8 @@ var config = {
         // css文件的处理
         {
           test: /\.css$/,
-          loader:[MiniCssExtractPlugin.loader,'css-loader']
-      },
+          loader:[MiniCssExtractPlugin.loader,'css-loader'],
+        },
                   // 模板文件的处理
                   {
                     test: /\.string$/,
@@ -101,9 +108,21 @@ var config = {
         filename: "css/[name].css",
         chunkFilename: "[id].css"
       }),
-      new HtmlWebpackPlugin(getHtmlConfig('index')),
       new HtmlWebpackPlugin(getHtmlConfig('user-login')),
-    ]
+      new HtmlWebpackPlugin(getHtmlConfig('index')),
+
+    ],
+
+    devServer: {
+      port: 8088,
+      inline: true,
+      proxy : {
+          '**/*.do' : {
+              target: 'http://test.happymmall.com',
+              changeOrigin : true
+          }
+      }
+  }
 };
 
 
