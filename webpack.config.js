@@ -1,99 +1,111 @@
 /*
- * @Author: He Zhen liang
- * @Date: 2019-08-19 11:49:32
- * @LastEditTime: 2019-08-20 09:30:37
+ * @Author: He zhenliang
+ * @Date: 2019-08-21 09:31:55
+ * @LastEditors: Do not Edit
+ * @LastEditTime: 2019-08-21 10:48:57
  */
 
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const HtmlWebpackPlugin = require('html-webpack-plugin')
+var HtmlWebpackPlugin   = require('html-webpack-plugin');
+var webpack             = require('webpack');
 
-
+// 获取html-webpack-plugin参数的方法 
 var getHtmlConfig = function(name){
   return {
-      template: './src/view/'+ name + '.html', // 源模板文件
-      filename: 'view/'+ name + '.html', // 输出文件【注意：这里的根路径是module.exports.output.path】
-      hash: true,
-      inject: true,
-      chunks: ["common",'index']
-  }
-}
+      template    : './src/view/' + name + '.html',
+      filename    : 'view/' + name + '.html',
+      inject      : true,
+      hash        : true,
+      chunks      : ['common', name]
+  };
+};
 
 
-//webpack config
 var config = {
   entry: {
-    'index': ['./src/page/index/index.js'],
-    'login': ['./src/page/login/index.js']
+    'index'             : './src/page/index.js',
+    'login'             : './src/page/user-login/index.js',
+    'common'            : './src/page/common/index.js',
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
-    publicPath:'/dist',
-    filename: './js/[name].js',
+    filename    : 'js/[name].js'
   },
-  module: {
-    rules: [
-      {
-        test: /\.css$/,
-        use: [
-          {
-            loader: MiniCssExtractPlugin.loader,
-            options: {
-              // 这里可以指定一个 publicPath
-              // 默认使用 webpackOptions.output中的publicPath
-              publicPath: './'
-            },
-          },
-          'css-loader', 
-        ],
-      },
-      {
-        test: /\.(gif|png|jpg|svg|ttf)\??.*$/,
-        use: [
-          {
-            loader: MiniCssExtractPlugin.loader,
-            options: {
-              // 这里可以指定一个 publicPath
-              // 默认使用 webpackOptions.output中的publicPath
-              publicPath: './'
-            },
-          },
-          'url-loader?limit=100&name=resource/[name].[ext]', 
-        ],
-      }
-    ]
-  },
-  mode: 'production',
-  externals :{
+  externals : {
     'jquery' : 'window.jQuery'
   },
-  plugins: [
-    new CleanWebpackPlugin(),
-    new MiniCssExtractPlugin({
-      // 类似 webpackOptions.output里面的配置 可以忽略
-      filename: 'css/[name].css',
-      chunkFilename: 'css/[id].css',
-    }),
-    new HtmlWebpackPlugin(getHtmlConfig('index')),
-    new HtmlWebpackPlugin(getHtmlConfig('login')),
-    
-  ],
-  optimization: {
-    splitChunks: {
-      cacheGroups: {
-        vendors: {
-          test: /[\\/]node_modules[\\/]/,
-          priority: -10
-        },
-          commons: { // 其他同步加载公共包
-            chunks: 'all',
-            minChunks: 2,
-            name: 'base',
-            priority: 80,
-          },
-      }
-  }
-  }
+  module: {
+    /* 
+    * 【改动】：loader的使用中，loaders字段变为rules，用来放各种文件的加载器，用rules确实更为贴切
+    */
+    rules: [
+        /* 
+        * 【改动】：css样式的加载方式变化
+        */
+        // css文件的处理
+        {
+          test: /\.css$/,
+          loader:[MiniCssExtractPlugin.loader,'css-loader']
+      },
+                  // 模板文件的处理
+                  {
+                    test: /\.string$/,
+                    use: {
+                        loader: 'html-loader',
+                        options: {
+                            minimize : true,
+                            removeAttributeQuotes : false
+                        }
+                    }
+                },
+                /* 
+                * 【改动】：图片文件的加载方式变化，并和字体文件分开处理
+                */
+                // 图片的配置
+                {
+                    test: /\.(png|jpg|gif)$/,
+                    use: [
+                        {
+                            loader: 'url-loader',
+                            options: {
+                                /* 
+                                * 【改动】：图片小于2kb的按base64打包
+                                */
+                                limit: 2048,
+                                name: 'resource/[name].[ext]'
+                            }
+                        }
+                    ]
+                },
+                /* 
+                * 【改动】：字体文件的加载方式变化
+                */
+                // 字体图标的配置
+                {
+                    test: /\.(eot|svg|ttf|woff|woff2|otf)$/,
+                    use: [
+                        {
+                            loader: 'url-loader',
+                            options: {
+                                limit: 8192,
+                                name: 'resource/[name].[ext]'
+                            }
+                        }
+                    ]
+                }
+      ]
+    },
+    plugins:[
+      new MiniCssExtractPlugin({
+        filename: "css/[name].css",
+        chunkFilename: "[id].css"
+      }),
+      new HtmlWebpackPlugin(getHtmlConfig('index')),
+      new HtmlWebpackPlugin(getHtmlConfig('user-login')),
+    ]
 };
-module.exports = config
+
+
+module.exports = config;
+
